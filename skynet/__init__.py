@@ -1,7 +1,6 @@
 def run():
 
     from log_influxdb import InfluxDBLogger
-    from server_sent_events import ServerSentEvent
     from influxdb_connection import InfluxDBConnection
     from receive_server import SkynetReceiveManager
     
@@ -17,7 +16,7 @@ def run():
 
     from .web import app
 
-    app.run(threaded=True)
+    app.run(threaded=True, port=5001)
 
     if SkynetReceiveManager.srv is not None:
         SkynetReceiveManager.srv.stop()

@@ -37,7 +37,6 @@ class InfluxDBLogger(Thread):
                 },
                 "fields": {"value": value}
             }
-            print(point)
             self.q.put(point)
 
         self.handler = log
@@ -66,7 +65,7 @@ class InfluxDBLogger(Thread):
                 except Exception as e:
                     print(e)
                 
-                print(len(points))
+                print "logging %u points" % len(points)
 
         except Exception as e:
             print(e)
