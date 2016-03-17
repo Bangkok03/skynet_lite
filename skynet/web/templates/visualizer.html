@@ -1,0 +1,152 @@
+
+{% extends "base.html" %}
+
+{% block title %} Visualizer {% endblock %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block header %} Visualizer {% endblock %}
+
+{% block content %}
+{{ super() }}
+
+<!-- <div class="col-lg-12">
+    <div class="panel panel-default">
+        <div class="panel-heading">Controls</div>
+        <div class="panel-body">
+            <label>Query</label>
+            <div class="form-group input-group">
+                <input class="form-control" type="text">
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="button">
+                        <i class="fa fa-bar-chart"></i>
+                    </button>
+                </span>
+            </div>
+        </div>  
+    </div> 
+</div> -->
+
+<div class="col-lg-12">
+    <div class="panel panel-default">
+        <div class="panel-heading">Add Query</div>
+        <div class="panel-body">
+            <label>Query</label>
+
+            <div class="row">
+                <div class="col-lg-7">
+                    <div class="form-group input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-search"></i>
+                        </span>
+                        <select id="measuremnt" class="form-control">
+                            <option></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-2">
+                    <div class="form-group input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-terminal"></i>
+                        </span>
+                        <select id="aggregator" class="form-control" type="text">
+                            <option></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-2">
+                    <div class="form-group input-group input-group-sm">
+                        <span class="input-group-addon">
+                            <i class="fa fa-tags"></i>
+                        </span>
+                        <input id="fill" class="form-control" type="text" placeholder="fill">
+                    </div>
+                </div>
+                <div class="col-lg-1">
+                    <button class="btn btn-primary" type="button" id="plot_btn">
+                        <i class="fa fa-line-chart"></i> PLOT
+                    </button>
+                </div>
+            </div>
+        </div>  
+    </div> 
+</div>
+
+<div class="col-lg-12">
+    <div class="panel panel-default">
+        <div class="panel-heading">Plot</div>
+        <div class="panel-body">
+            <div id="plot" style="height:500px;"></div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script src="/static/packets.js"></script>
+
+<script language="javascript" type="text/javascript" src="/static/js/jquery.flot.min.js"></script>
+
+<script>
+
+    var measurements = {{ measurements|safe }};
+    var aggregator = ['count', 'distinct', 'integral', 'mean', 'median', 'spread', 
+                      'sum', 'bottom', 'first', 'last', 'max', 'min', 'percentile', 
+                      'top', 'derivative','non_negative_derivative', 'stddev'];
+
+    for (i in measurements)
+    {
+        var m = measurements[i];
+        $("#measuremnt").append($("<option></option>").html(m).val(m));
+    }
+
+    for (i in aggregator)
+    {
+        var a = aggregator[i];
+        $("#aggregator").append($("<option></option>").html(a).val(a));
+    }
+    
+    $("#measuremnt").select2({ placeholder: "measurement" });
+    $("#aggregator").select2({ placeholder: "aggregator" });
+
+    $("#plot_btn").click(request_plot)
+
+
+    function request_plot()
+    {
+        var meas = $("#measuremnt").val();
+
+        if (meas == "") return;
+        meas = meas.split('.');
+        data = {
+            d: meas[3],
+            p: meas[2],
+            n: meas[1],
+            b: meas[0]
+        }
+
+        if ($("#aggregator").val() != "") data.a = $("#aggregator").val();
+        if ($("#fill").val() != "") data.f = $("#fill").val();
+        
+        //data.g = "time(1m)"
+        data.t = "time > (now() - 5m)"
+
+        $.get("/db/query", data, show_plot, 'json');
+    }
+
+    function show_plot(data)
+    {
+        $.plot("#plot", [data]);
+        console.log(data)
+    }
+
+</script>
+
+{% endblock %}
+
+{% block active_menu %}visualizer{% endblock %}

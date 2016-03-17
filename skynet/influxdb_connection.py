@@ -1,0 +1,77 @@
+# Copyright (c) 2016, Jonathan Nutzmann
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+from influxdb import InfluxDBClient
+from strict_rfc3339 import rfc3339_to_timestamp
+
+
+class InfluxDBConnection:
+
+    def __init__(self, server="localhost", port=8086, user='root', password='root', database='skynet_lite'):
+
+        self.client = InfluxDBClient(server, port, user, password, database)
+        self.client.create_database(database, if_not_exists=True)
+
+    def write_points(self, points):
+        self.client.write_points(points)
+
+    def get_results_for_plot(self, query):
+        pts = self.client.query(query)        
+        results = list(pts.get_points())
+        
+        retval = []
+
+        if len(results) > 0:
+
+            keys = list(results[0].keys())
+            keys.remove('time')
+            f = keys[0]
+
+            for r in results:
+                t = rfc3339_to_timestamp(r['time'])
+                d = r[f]
+
+                retval.append([t,d])
+
+        return retval
+
+    # TODO: update this
+    def get_measurements(self):
+        series = self.client.get_list_series()
+        measurements = []
+
+        for s in series:
+            print(s)
+            for t in s["tags"]:
+                try:
+                    root = ".".join([t["board"], t["name"], s["name"]])
+
+                    query = "SELECT * FROM %s WHERE \"board\"='%s' AND \"name\"='%s' LIMIT 1" % (s["name"], t["board"], t["name"])
+                    print(query)
+                    rs = self.client.query(query)
+                    qr = list(rs.get_points())[0]
+
+                    for k in qr.keys():
+                        if k not in ['time', 'name', 'board', 'rtr', 'origin']:
+                            measurements.append(root + "." + k)
+
+                except Exception as e:
+                    print(e)
+
+        return sorted(measurements)
+
+    # TODO: update this
+    def get_points(measurement, start, stop, limit):
+
+        board, name, packet, data = measurement.split('.')
+
+        q = "SELECT %s FROM %s WHERE board='%s' AND name='%s' LIMIT %i"

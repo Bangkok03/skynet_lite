@@ -1,0 +1,1 @@
+This project is a deravitive of Skynet meant for generic logging and visualization of received data.

@@ -1,0 +1,243 @@
+
+{% extends "base.html" %}
+
+{% block title %} sb web {% endblock %}
+
+{% block head %}
+    {{ super() }}
+   
+    <style>
+        .plot-select {
+            padding-bottom: 10px;
+        }
+        .live-plot {
+            height: 200px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+    </style>
+
+{% endblock %}
+
+{% block header %} sb web </small> {% endblock %}
+
+{% block content %}
+{{ super() }}
+
+<div class="col-lg-12">
+    <div class="panel panel-default">
+        <div class="panel-heading">Received Packets</div>
+        <div class="panel-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Name</th>
+                            <th>Count</th>
+                            <th>Timestamp</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packet_table_body"></tbody>
+                </table>
+            </div>
+        </div>      
+    </div>
+</div>
+
+<div class="col-lg-12">
+    <div class="panel panel-default">
+        <div class="panel-heading">Live Plots</div>
+        <div class="panel-body">
+            <div id="plot_container">
+                
+            </div>
+            <button id="add-plot-button" type="button" class="btn btn-success"><i class="fa fa-plus"></i> Add Plot</button>
+        </div>
+    </div>      
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script src="/static/js/stream.js"></script>
+<script language="javascript" type="text/javascript" src="/static/js/jquery.flot.min.js"></script>
+<script language="javascript" type="text/javascript" src="/static/js/jquery.flot.time.min.js"></script>
+
+<script>
+    
+
+var measurement_log = {};
+var measurements = [];
+
+var plot_count = 0;
+
+var measurement_name_to_address = {};
+
+var address_to_handler = {};
+
+
+// ============== LIVE PLOT & LOGGING =====================
+
+function clear_existing_handlers(plot_id)
+{
+    for (i in address_to_handler)
+    {
+        address_to_handler[i][plot_id] = null;
+    }
+}
+
+function add_live_plot()
+{
+    var container = $("#plot_container");
+
+    var select = $("<select></select>")
+            .attr("multiple", "multiple")
+            .addClass("form-control measurement-name");
+
+    container.append($("<div></div>").addClass("plot-select").append(select));
+    select.select2( {data:measurements} );
+    var plot = $("<div></div>").addClass("live-plot");
+
+    container.append(plot);
+
+    var plot_id = plot_count;
+    plot_count = plot_count + 1;
+
+    var p = $.plot( plot, [[]], { xaxis: { mode:"time" } } );
+    
+    var update_fxn = function () {
+        var names = select.val();
+        var plot_data = [];
+
+        var addresses = [];
+
+        for (i in names)
+        {
+            var name = names[i];
+            plot_data.push(measurement_log[name]);
+            addresses.push(measurement_name_to_address[name]);
+        }
+
+        var refresh_fxn = function() {
+            p.setData(plot_data);
+            p.setupGrid();
+            p.draw();
+        }
+
+        clear_existing_handlers(plot_id);
+
+        for (i in addresses) 
+        {
+            if (typeof address_to_handler[addresses[i]] == "undefined") {
+                address_to_handler[addresses[i]] = {}
+            }
+
+            address_to_handler[addresses[i]][plot_id] = refresh_fxn;
+        }
+
+        refresh_fxn();
+    };
+
+    select.change(update_fxn);
+}
+
+function get_measurement_name(data)
+{
+    return data.source + '.' + data.name;
+}
+
+function log_new_measurement(data)
+{
+    var name = get_measurement_name(data)
+
+    // Add to list of measurements received
+    measurements.push({ id:name, text:name });
+
+    // Update dropdowns with new options.
+    $(".measurement-name").select2( {data:measurements} );
+
+    // Initialize and log.
+    measurement_log[name] = [];
+    log_measurement(data);
+}
+
+function log_measurement(data, field)
+{ 
+    var name = get_measurement_name(data)
+
+    measurement_log[name].push([data.timestamp*1000, data.value]);
+    
+    if (measurement_log[name].length > 1000) {
+        measurement_log[name].shift();
+    }
+}
+
+
+// ============== RECEIVING =====================
+
+function receive(data)
+{
+    console.log(data);
+    
+    var data_id = data.source + '.' + data.name;
+
+    if (($('tr[data-id="'+data_id+'"]').length) > 0)
+    {
+
+        log_measurement(data);
+
+        $('tr[data-id="' + data_id + '"] td.value').html(data.value);
+        $('tr[data-id="' + data_id + '"] td.value').css("background-color", "#B0E2FF");
+        $('tr[data-id="' + data_id + '"] td.value').animate({backgroundColor: 'transparent'}, 500);
+
+        $('tr[data-id="' + data_id + '"] td.timestamp').html(data.timestamp);
+        
+        
+        var count = parseInt($('tr[data-id="' + data_id + '"] td.count').html())+1
+        $('tr[data-id="' + data_id + '"] td.count').html(count);
+    }
+    else
+    {
+
+        log_new_measurement(data);
+
+        var row = $("<tr></tr>");
+
+        row.attr("data-id", data_id)
+        row.append($("<td></td>").html(data.source));
+        row.append($("<td></td>").html(data.name)); // count age value
+        row.append($("<td></td>").addClass('count').html("1"));
+        row.append($("<td></td>").addClass('timestamp').html(data.timestamp));
+        row.append($("<td></td>").addClass('value').html(data.value));
+
+        $("#packet_table_body").append(row);
+    }
+
+    if (typeof address_to_handler[data.address] != "undefined")
+    {
+        for (i in address_to_handler[data.address]) {
+            var fxn = address_to_handler[data.address][i];
+            if (fxn != null) fxn();
+        }
+    }
+}
+
+
+// ============== LIVE PLOT & LOGGING =====================
+
+// Initialize Packet Sender
+
+// Initialize Packet Receiever
+streamPackets(receive);
+
+// Initialize Live Plot stuff
+$("#add-plot-button").click(add_live_plot);
+
+</script>
+
+{% endblock %}
+
+{% block active_menu %}stream{% endblock %}
