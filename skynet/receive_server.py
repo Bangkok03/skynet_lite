@@ -48,7 +48,7 @@ class SkynetReceiveServer(Thread):
 				try:
 					data, addr = self.socket.recvfrom(8192) # buffer size is 1024 bytes
 				except Exception:
-					pass
+					continue
 
 				print("message", addr)
 				
