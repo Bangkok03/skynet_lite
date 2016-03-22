@@ -1,3 +1,15 @@
+# Copyright (c) 2016, Jonathan Nutzmann
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
 import json
 import socket
 import time
@@ -12,6 +24,7 @@ class SkynetReceiveManager():
 		if SkynetReceiveManager.srv is None:
 			SkynetReceiveManager.srv = SkynetReceiveServer()
 			SkynetReceiveManager.srv.start()
+
 
 class SkynetReceiveServer(Thread):
 
@@ -43,22 +56,16 @@ class SkynetReceiveServer(Thread):
 	def run(self):
 		self.running = True
 
-		try:
-			while self.running:
-				try:
-					data, addr = self.socket.recvfrom(8192) # buffer size is 1024 bytes
-				except Exception:
-					continue
+		while self.running:
+			try:
+				data, addr = self.socket.recvfrom(8192) # buffer size is 1024 bytes
+			except Exception:
+				continue
 
-				print("message", addr)
-				
-				message = json.loads(data)
-				
-				for h in self.handlers:
-					for d in message['data']:
-						h(d['name'], d['time'], message['src'], d['val'])
-
-		except Exception as e:
-			print(e)
-
-		# TODO: implement actual listener
+			print("message", addr)
+			
+			message = json.loads(data)
+			
+			for h in self.handlers:
+				for d in message['data']:
+					h(d['name'], d['time'], message['src'], d['val'])

@@ -48,24 +48,25 @@ class InfluxDBLogger(Thread):
     def run(self):
         self.running = True
 
-        try:
-            while self.running:
-                points = []
-                time.sleep(1)  # wait for more points (only make influx call 1/sec)
-                
+        while self.running:
+            points = []
+            time.sleep(1)  # wait for more points (only make influx call 1/sec)
+            
+            try:
                 p = self.q.get(timeout=1)
-                if p is not None:
-                    points.append(p)
-                
-                while not self.q.empty():
-                    points.append(self.q.get())
-                
+            except:
+                p = None
+
+            if p is not None:
+                points.append(p)
+            
+            while not self.q.empty():
+                points.append(self.q.get())
+            
+            if len(points) > 0:
                 try:
                     self.db.write_points(points)
                 except Exception as e:
                     print(e)
                 
                 print "logging %u points" % len(points)
-
-        except Exception as e:
-            print(e)
