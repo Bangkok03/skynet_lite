@@ -13,7 +13,7 @@ The following script will clone this repository, as well as install:
 * **[influxdb](https://influxdata.com/time-series-platform/influxdb/)** - time series database for logging
 * **[grafana](http://grafana.org/)** - data front end for influxdb
 
-```bash
+```shell
 git clone https://github.com/jnutzmann/skynet_lite
 sudo pip install flask
 wget https://s3.amazonaws.com/influxdb/influxdb_0.10.3-1_amd64.deb
@@ -29,6 +29,8 @@ sudo service grafana-server start
 
 # Use
 
+Once the repository is cloned and the influxdb service has been started (see above script), run the skynet server by running `./skynet_lite` in the root of the repository.
+
 Pushing data into Skynet Lite is easy!  Simply send a UDP packet to `http://localhost:5002` with a JSON payload with the following form:
 
 ```json
@@ -37,14 +39,14 @@ Pushing data into Skynet Lite is easy!  Simply send a UDP packet to `http://loca
 	"data": [
 		{
 			"name": "my.data.name",
-			"time": 1458626312
+			"time": 1458626312,
 			"val": 42.42
 		},
 		{
 			"name": "my.data.name2",
-			"time": 1458626313
+			"time": 1458626313,
 			"val": 123
-		}, ...
+		}
 	]
 }
 
