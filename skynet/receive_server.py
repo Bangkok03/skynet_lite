@@ -62,7 +62,7 @@ class SkynetReceiveServer(Thread):
 			except Exception:
 				continue
 
-			print("message", addr)
+#			print("message", addr)
 			
 			message = json.loads(data)
 			
