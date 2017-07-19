@@ -28,7 +28,10 @@ class InfluxDBLogger(Thread):
         self.db = db
 
         def log(name, timestamp_seconds, source, value):
-            
+            if type(value) is long:
+                # longs are not supported by influx, but are okay in JSON, so ignore
+                return
+
             point = {
                 "measurement": name,
                 "time": int(timestamp_seconds*1e9),
