@@ -1,5 +1,16 @@
 #!/usr/bin/env python
 
 import skynet
+from skynet.config import get_config
+import sys
 
-skynet.run()
+cfg_name = "DEFAULT"
+
+if len(sys.argv) > 1:
+  cfg_name = sys.argv[1]
+
+cfg = get_config(cfg_name=cfg_name)
+
+skynet.run(server=cfg["server"], port=int(cfg["port"]), user=cfg["user"], password=cfg["password"], 
+           database=cfg["database"])
+

@@ -20,8 +20,6 @@ class InfluxDBLogger(Thread):
 
     def __init__(self, db):
 
-        print "init logger"
-        
         Thread.__init__(self)
         
         self.q = Queue()

@@ -18,8 +18,11 @@ class InfluxDBConnection:
 
     def __init__(self, server="localhost", port=8086, user='root', password='root', database='skynet_lite'):
 
+        print "Connecting to Influx: %s@%s:%s/%s" % (user, server, port, database)
+
         self.client = InfluxDBClient(server, port, user, password, database)
         self.client.create_database(database, if_not_exists=True)
 
     def write_points(self, points):
         self.client.write_points(points)
+

@@ -10,14 +10,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-def run():
+def run(*args, **kwargs):
 
     from log_influxdb import InfluxDBLogger
     from influxdb_connection import InfluxDBConnection
     from receive_server import SkynetReceiveManager
     
 
-    db = InfluxDBConnection()
+    db = InfluxDBConnection(*args, **kwargs)
     SkynetReceiveManager.init()
     logger = InfluxDBLogger(db)
 
