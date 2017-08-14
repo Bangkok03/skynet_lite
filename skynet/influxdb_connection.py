@@ -21,7 +21,9 @@ class InfluxDBConnection:
         print "Connecting to Influx: %s@%s:%s/%s" % (user, server, port, database)
 
         self.client = InfluxDBClient(server, port, user, password, database)
-        self.client.create_database(database, if_not_exists=True)
+        dbs = [x['name'] for x in self.client.get_list_database()]
+        if database not in dbs:
+            self.client.create_database(database)
 
     def write_points(self, points):
         self.client.write_points(points)
